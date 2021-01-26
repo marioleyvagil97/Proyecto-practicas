@@ -1,64 +1,10 @@
-from django.test import TestCase
-from django.urls import reverse, resolve
 from django.contrib.auth.models import User
-from ..views import home, board_topics, new_topic
-from ..models import Board,Topic,Post
+from django.test import TestCase
+from django.urls import resolve, reverse
+
 from ..forms import NewTopicForm
-
-
-
-class HomeTests(TestCase):
-
-    def setUp(self):
-        self.board = Board.objects.create(name='Django', description='Django board.')
-        url = reverse('home')
-        self.response = self.client.get(url)
-
-    def test_home_view_status_code(self):
-        self.assertEquals(self.response.status_code, 200)
-
-    def test_home_url_resolves_home_view(self):
-        view = resolve('/')
-        self.assertEquals(view.func, home)
-
-    def test_home_view_contains_link_to_topics_page(self):
-        board_topics_url = reverse('board_topics', kwargs={'pk': self.board.pk})
-        self.assertContains(self.response, 'href="{0}"'.format(board_topics_url))
-
-class BoardTopicsTests(TestCase):
-    # Prepara el ambiente para hacer las pruebas con una BD creada en el momento    
-    def setUp(self):
-        Board.objects.create(name='Django', description='Django board.')
-    # comprueba que el codigo sea 200 por un board existente
-    def test_board_topics_view_success_status_code(self):
-        url = reverse('board_topics', kwargs={'pk': 1})
-        response = self.client.get(url)
-        self.assertEquals(response.status_code, 200)
-    # Compureba que si un board no existe regrese un código 404
-    def test_board_topics_view_not_found_status_code(self):
-        url = reverse('board_topics', kwargs={'pk': 99})
-        response = self.client.get(url)
-        self.assertEquals(response.status_code, 404)
-    # Comprueba la función view es la correcta para renderizar los topics
-    def test_board_topics_url_resolves_board_topics_view(self):
-        view = resolve('/boards/1/')
-        self.assertEquals(view.func, board_topics)
-    #Comprueba el link para regresar a home
-    def test_board_topics_view_contains_link_back_to_homepage(self):
-        board_topics_url = reverse('board_topics', kwargs={'pk': 1})
-        response = self.client.get(board_topics_url)
-        homepage_url = reverse('home')
-        self.assertContains(response, 'href="{0}"'.format(homepage_url))
-    # Comprueba si el boton para crear un nuevo topic funciona
-    def test_board_topics_view_contains_navigation_links(self):
-        board_topics_url = reverse('board_topics', kwargs={'pk': 1})
-        homepage_url = reverse('home')
-        new_topic_url = reverse('new_topic', kwargs={'pk': 1})
-
-        response = self.client.get(board_topics_url)
-
-        self.assertContains(response, 'href="{0}"'.format(homepage_url))
-        self.assertContains(response, 'href="{0}"'.format(new_topic_url))
+from ..models import Board, Post, Topic
+from ..views import new_topic
 
 class NewTopicTests(TestCase):
 # Crea una instancia Board para hacer las pruebas
@@ -141,3 +87,12 @@ class NewTopicTests(TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertTrue(form.errors)
 
+class LoginRequiredNewTopicTests(TestCase):
+    def setUp(self):
+        Board.objects.create(name='Django', description='Django board.')
+        self.url = reverse('new_topic', kwargs={'pk': 1})
+        self.response = self.client.get(self.url)
+
+    def test_redirection(self):
+        login_url = reverse('login')
+        self.assertRedirects(self.response, '{login_url}?next={url}'.format(login_url=login_url, url=self.url))
