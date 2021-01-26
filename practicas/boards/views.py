@@ -62,17 +62,17 @@ def new_topic(request, pk):
         if form.is_valid():
             topic = form.save(commit=False)
             topic.board = board
-            topic.starter = request.user  # <- here
+            topic.starter = request.user
             topic.save()
             Post.objects.create(
                 message=form.cleaned_data.get('message'),
                 topic=topic,
-                created_by=request.user  # <- and here
+                created_by=request.user
             )
-            return redirect('board_topics', pk=board.pk)  # TODO: redirect to the created topic page
+            return redirect('topic_posts', pk=pk, topic_pk=topic.pk)
     else:
         form = NewTopicForm()
-    return redirect('topic_posts', pk=pk, topic_pk=topic.pk) 
+    return render(request, 'new_topic.html', {'board': board, 'form': form})
 
 
 def topic_posts(request, pk, topic_pk):
