@@ -62,11 +62,12 @@ class SuccessfulReplyTopicTests(ReplyTopicTestCase):
         self.client.login(username=self.username, password=self.password)
         self.response = self.client.post(self.url, {'message': 'hello, world!'})
 
-    def test_redirection(self):
+   def test_redirection(self):
         '''
         A valid form submission should redirect the user
         '''
-        topic_posts_url = reverse('topic_posts', kwargs={'pk': self.board.pk, 'topic_pk': self.topic.pk})
+        url = reverse('topic_posts', kwargs={'pk': self.board.pk, 'topic_pk': self.topic.pk})
+        topic_posts_url = '{url}?page=1#2'.format(url=url)
         self.assertRedirects(self.response, topic_posts_url)
 
     def test_reply_created(self):
